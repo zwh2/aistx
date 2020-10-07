@@ -1,0 +1,5 @@
+# editors
+[._]*.sw[a-p]
+
+# build dirs
+build/
