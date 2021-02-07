@@ -32,6 +32,7 @@ namespace gr {
     {
      private:
 		bool d_repeat;
+		unsigned long d_repeat_cnt;
 		bool d_enable_NRZI;
 		//char * d_sentence;
 		char *payload;	// [the 01 rapresentation of the sentence as taken from input]

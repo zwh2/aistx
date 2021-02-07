@@ -57,6 +57,7 @@ namespace gr {
 		      gr::io_signature::make(0, 0, 0),
 		      gr::io_signature::make(1, 1, sizeof(unsigned char))),
 		      d_repeat(repeat),
+          d_repeat_cnt(0),
 		      d_enable_NRZI(enable_NRZI)
     {
 		unsigned short REMAINDER_TO_EIGHT, PADDING_TO_EIGHT;	// to pad the payload to a multiple of 8
@@ -133,7 +134,7 @@ namespace gr {
 		return buffer;
 	}
 
-	// staffing function
+	// stuffing function
 	int Build_Frame_impl::stuff (const char *in, char *out, int l_in)
 	{
 		int i=0, j=0, consecutives=0, l_out=0;
@@ -346,6 +347,14 @@ namespace gr {
 			  gr_vector_const_void_star &input_items,
 			  gr_vector_void_star &output_items)
     {
+        // sleep at the start, if we stop too quickly after the send, the send doesn't seem to happen
+        usleep(100000);
+
+        // if not set to repeat and we've sent a message we can exit
+        if (!d_repeat && d_repeat_cnt > 0) {
+          return WORK_DONE;
+        }
+
         unsigned char *out = (unsigned char *) output_items[0];
         
 //		B3co>HP00                                              P      ;8           ;56                RD           =Is3                     w      sU           kP06	                 CRC
@@ -453,13 +462,8 @@ namespace gr {
 		
 		}
 
-				
-		// some sleep here
-//		int r = (int) rand() % 1000;
-//		usleep(1000*r);	// -6
-		//sleep(1);
-		usleep(100000);
-		
+        d_repeat_cnt++;
+
         // Tell runtime system how many output items we produced.
         return noutput_items;
     }
