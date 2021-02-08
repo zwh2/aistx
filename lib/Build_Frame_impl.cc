@@ -27,9 +27,9 @@
 #include <gnuradio/io_signature.h>
 #include <gnuradio/tagged_stream_block.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 #define LEN_PREAMBLE 24
@@ -70,11 +70,6 @@ Build_Frame_impl::Build_Frame_impl(bool repeat,
 {
     message_port_register_in(pmt::mp("sentence"));
 }
-
-/*
- * Our virtual destructor.
- */
-Build_Frame_impl::~Build_Frame_impl() {}
 
 
 void Build_Frame_impl::dump_buffer(const char* b, int buffer_size)

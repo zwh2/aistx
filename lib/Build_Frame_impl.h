@@ -43,7 +43,7 @@ public:
     Build_Frame_impl(bool repeat,
                      bool enable_NRZI,
                      const std::string& lengthtagname = "packet_len");
-    ~Build_Frame_impl();
+    ~Build_Frame_impl() override = default;
 
     void dump_buffer(const char* b, int buffer_size);
     char* int2bin(int a, char* buffer, int buf_size);
@@ -55,13 +55,13 @@ public:
     void compute_crc(char* buffer, char* ret, unsigned int len);
     void byte_packing(char* input_frame, unsigned char* out_byte, unsigned int len);
 
-    int calculate_output_stream_length(const gr_vector_int& ninput_items);
+    int calculate_output_stream_length(const gr_vector_int& ninput_items) override;
 
     // Where all the action really happens
     int work(int noutput_items,
              gr_vector_int& ninput_items,
              gr_vector_const_void_star& input_items,
-             gr_vector_void_star& output_items);
+             gr_vector_void_star& output_items) override;
 };
 
 } // namespace AISTX

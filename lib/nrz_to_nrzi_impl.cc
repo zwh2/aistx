@@ -24,7 +24,7 @@
 
 #include "nrz_to_nrzi_impl.h"
 #include <gnuradio/io_signature.h>
-#include <stdio.h>
+#include <cstdio>
 
 namespace gr {
 namespace AISTX {
@@ -43,11 +43,6 @@ nrz_to_nrzi_impl::nrz_to_nrzi_impl()
                 gr::io_signature::make(1, 1, sizeof(unsigned char)))
 {
 }
-
-/*
- * Our virtual destructor.
- */
-nrz_to_nrzi_impl::~nrz_to_nrzi_impl() {}
 
 void nrz_to_nrzi_impl::forecast(int noutput_items, gr_vector_int& ninput_items_required)
 {

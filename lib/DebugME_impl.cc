@@ -24,7 +24,7 @@
 
 #include "DebugME_impl.h"
 #include <gnuradio/io_signature.h>
-#include <stdio.h>
+#include <cstdio>
 
 namespace gr {
 namespace AISTX {
@@ -44,11 +44,6 @@ DebugME_impl::DebugME_impl(size_t itemsize)
       d_itemsize(itemsize)
 {
 }
-
-/*
- * Our virtual destructor.
- */
-DebugME_impl::~DebugME_impl() {}
 
 void DebugME_impl::forecast(int noutput_items, gr_vector_int& ninput_items_required)
 {
