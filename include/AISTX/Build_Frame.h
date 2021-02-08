@@ -23,7 +23,7 @@
 #define INCLUDED_AISTX_BUILD_FRAME_H
 
 #include <AISTX/api.h>
-#include <gnuradio/sync_block.h>
+#include <gnuradio/tagged_stream_block.h>
 
 namespace gr {
   namespace AISTX {
@@ -33,7 +33,7 @@ namespace gr {
      * \ingroup AISTX
      *
      */
-    class AISTX_API Build_Frame : virtual public gr::sync_block
+    class AISTX_API Build_Frame : virtual public gr::tagged_stream_block
     {
      public:
       typedef boost::shared_ptr<Build_Frame> sptr;
@@ -50,7 +50,7 @@ namespace gr {
        * 6. NRZI conversion (enabled by default)
        *
        */
-      static sptr make(const char *sentence, bool repeat, bool enable_NRZI);
+      static sptr make(bool repeat, bool enable_NRZI, const std::string& lengthtagname = "packet_len");
     };
 
   } // namespace AISTX

@@ -34,13 +34,13 @@ namespace gr {
 		bool d_repeat;
 		unsigned long d_repeat_cnt;
 		bool d_enable_NRZI;
-		//char * d_sentence;
-		char *payload;	// [the 01 rapresentation of the sentence as taken from input]
-		unsigned short LEN_SENTENCE;
-		unsigned short LEN_PAYLOAD;
+        size_t d_itemsize;
+    pmt::pmt_t d_curr_meta;
+    pmt::pmt_t d_curr_vect;
+    size_t d_curr_len;
 		
      public:
-        Build_Frame_impl(const char *sentence, bool repeat, bool enable_NRZI);
+        Build_Frame_impl(bool repeat, bool enable_NRZI, const std::string& lengthtagname = "packet_len");
         ~Build_Frame_impl();
 
 		void dump_buffer(const char *b, int buffer_size);
@@ -53,10 +53,13 @@ namespace gr {
 		void compute_crc(char *buffer, char *ret, unsigned int len);
 		void byte_packing(char *input_frame, unsigned char *out_byte, unsigned int len);
 
+      int calculate_output_stream_length(const gr_vector_int& ninput_items);
+
       // Where all the action really happens
       int work(int noutput_items,
-	       gr_vector_const_void_star &input_items,
-	       gr_vector_void_star &output_items);
+          gr_vector_int& ninput_items,
+          gr_vector_const_void_star& input_items,
+          gr_vector_void_star& output_items);
     };
 
   } // namespace AISTX

@@ -22,12 +22,15 @@
 #include "config.h"
 #endif
 
+#include <gnuradio/tagged_stream_block.h>
+#include <gnuradio/blocks/pdu.h>
 #include <gnuradio/io_signature.h>
 #include "Build_Frame_impl.h"
 
 #include <stdio.h>	
 #include <stdlib.h>	
 #include <string.h>
+#include <iostream>
 
 #define LEN_PREAMBLE 24
 #define LEN_START 8
@@ -43,63 +46,27 @@ namespace gr {
   namespace AISTX {
 
     Build_Frame::sptr
-    Build_Frame::make(const char *sentence, bool repeat, bool enable_NRZI)
+    Build_Frame::make(bool repeat, bool enable_NRZI, const std::string& tsb_tag_key)
     {
       return gnuradio::get_initial_sptr
-        (new Build_Frame_impl(sentence, repeat, enable_NRZI));
+        (new Build_Frame_impl(repeat, enable_NRZI, tsb_tag_key));
     }
 
     /*
      * The private constructor
      */
-    Build_Frame_impl::Build_Frame_impl(const char *sentence, bool repeat, bool enable_NRZI)
-      : gr::sync_block("Build_Frame",
+      Build_Frame_impl::Build_Frame_impl(bool repeat, bool enable_NRZI, const std::string& tsb_tag_key)
+      : gr::tagged_stream_block("Build_Frame",
 		      gr::io_signature::make(0, 0, 0),
-		      gr::io_signature::make(1, 1, sizeof(unsigned char))),
+		      gr::io_signature::make(1, 1, sizeof(unsigned char)),
+          tsb_tag_key),
 		      d_repeat(repeat),
           d_repeat_cnt(0),
-		      d_enable_NRZI(enable_NRZI)
+		      d_enable_NRZI(enable_NRZI),
+          d_itemsize(sizeof(unsigned char)),
+          d_curr_len(0)
     {
-		unsigned short REMAINDER_TO_EIGHT, PADDING_TO_EIGHT;	// to pad the payload to a multiple of 8
-    
-		LEN_PAYLOAD = strlen(sentence);
-		if (LEN_PAYLOAD>168)
-			printf ("Frame padding disabled. Multiple packets.\n");
-
-		// IMPORTANT
-		REMAINDER_TO_EIGHT = LEN_PAYLOAD%8;
-		if (REMAINDER_TO_EIGHT==0) {
-			payload = (char *) malloc(LEN_PAYLOAD + LEN_CRC);
-			// nb. It comes in in ASCII
-			for (int i=0; i<LEN_PAYLOAD; i++)
-				payload[i]=sentence[i]-48;	
-		}
-		else if (REMAINDER_TO_EIGHT>0){
-
-		 	PADDING_TO_EIGHT = 8-REMAINDER_TO_EIGHT;		
-			payload = (char *) malloc(LEN_PAYLOAD + PADDING_TO_EIGHT + LEN_CRC);
-
-			for (int i=0; i<LEN_PAYLOAD; i++)
-				payload[i]=sentence[i]-48;		
-
-			printf ("Detected a payload which is *not* multiple of 8 (%d bits). Padding with %d bits to %d\n", LEN_PAYLOAD, PADDING_TO_EIGHT, LEN_PAYLOAD + PADDING_TO_EIGHT);
-			memset (payload + LEN_PAYLOAD, 0x0, PADDING_TO_EIGHT);
-			
-			LEN_PAYLOAD += PADDING_TO_EIGHT;	// update PAYLOAD LENGHT
-		}
-
-		dump_buffer(payload, LEN_PAYLOAD);
-
-		// crc 
-		char crc[16];	// 2 gnuradio bytes of CRC		
-		char input_crc[LEN_PAYLOAD];
-		memcpy (input_crc, payload, LEN_PAYLOAD);
-		compute_crc (input_crc, crc, LEN_PAYLOAD);	
-		memcpy (payload+LEN_PAYLOAD, crc, LEN_CRC);
-
-		// reverse
-		reverse_bit_order (payload, LEN_PAYLOAD+LEN_CRC);
-
+          message_port_register_in(pmt::mp("sentence"));
     }
 
     /*
@@ -342,11 +309,40 @@ namespace gr {
 //      printf("\n");
     }  
     
-    int
-    Build_Frame_impl::work(int noutput_items,
-			  gr_vector_const_void_star &input_items,
-			  gr_vector_void_star &output_items)
+    int Build_Frame_impl::calculate_output_stream_length(const gr_vector_int& ninput_items) {
+      // straight copy from `pdu to tagged stream block`
+      if (d_curr_len == 0) {
+        pmt::pmt_t msg(delete_head_nowait(pmt::mp("sentence")));
+        if (msg.get() == NULL) {
+          return 0;
+        }
+
+        if (pmt::is_pair(msg)) {
+          d_curr_meta = pmt::car(msg);
+          d_curr_vect = pmt::cdr(msg);
+          // do not assume the length of  PMT is in items (e.g.: from socket_pdu)
+          d_curr_len = pmt::blob_length(d_curr_vect) / d_itemsize;
+        }
+        else if (pmt::is_symbol(msg)) {
+          // transform a symbol to a uniform vector
+          const std::string sym_str = symbol_to_string(msg);
+          d_curr_vect = pmt::init_u8vector(sym_str.length(), reinterpret_cast<const uint8_t*>(sym_str.c_str()));
+          d_curr_len = sym_str.length();
+        }
+        else {
+          throw std::runtime_error("received a message type that hasn't been implemented");
+        }
+      }
+
+      return d_curr_len;
+    }
+
+    int Build_Frame_impl::work(int noutput_items,
+                                    gr_vector_int& ninput_items,
+                                    gr_vector_const_void_star& input_items,
+                                    gr_vector_void_star& output_items)
     {
+        // some direct copies in here from `pdu to tagged stream block` too
         // sleep at the start, if we stop too quickly after the send, the send doesn't seem to happen
         usleep(100000);
 
@@ -355,7 +351,75 @@ namespace gr {
           return WORK_DONE;
         }
 
-        unsigned char *out = (unsigned char *) output_items[0];
+        char* out = (char*) output_items[0];
+
+        if (d_curr_len == 0) {
+          return 0;
+        }
+
+        // work() should only be called if the current PDU fits entirely
+        // into the output buffer.
+        assert(noutput_items >= 0 && (unsigned int)noutput_items >= d_curr_len);
+
+        // Copy vector output
+        size_t nout = d_curr_len;
+        size_t io(0);
+        const uint8_t* ptr = (const uint8_t*)uniform_vector_elements(d_curr_vect, io);
+        memcpy(out, ptr, d_curr_len * d_itemsize);
+
+        // at this point we have the `sentence` stored in `out` and length in `nout`.
+        //printf("len: %ld; val: %s\n", nout, out);
+        // printf("buf len: %ld; in lenL %ld\n", noutput_items, ninput_items);
+        // TODO get a better understanding of noutput_items, set at 32768, but not entirely sure where/how
+        //   had been under the impression this would be based on the calc length function but
+        //   it does not seem related.  going off the 32k, our output should always fit..
+
+		//char* d_sentence;
+    const char* sentence = out;
+		char* payload;	// [the 01 rapresentation of the sentence as taken from input]
+		unsigned short LEN_SENTENCE;
+		unsigned short LEN_PAYLOAD;
+
+		unsigned short REMAINDER_TO_EIGHT, PADDING_TO_EIGHT;	// to pad the payload to a multiple of 8
+    
+		LEN_PAYLOAD = strlen(sentence);
+		if (LEN_PAYLOAD>168)
+			printf ("Frame padding disabled. Multiple packets.\n");
+
+		// IMPORTANT
+		REMAINDER_TO_EIGHT = LEN_PAYLOAD%8;
+		if (REMAINDER_TO_EIGHT==0) {
+			payload = (char *) malloc(LEN_PAYLOAD + LEN_CRC);
+			// nb. It comes in in ASCII
+			for (int i=0; i<LEN_PAYLOAD; i++)
+				payload[i]=sentence[i]-48;	
+		}
+		else if (REMAINDER_TO_EIGHT>0){
+
+		 	PADDING_TO_EIGHT = 8-REMAINDER_TO_EIGHT;		
+			payload = (char *) malloc(LEN_PAYLOAD + PADDING_TO_EIGHT + LEN_CRC);
+
+			for (int i=0; i<LEN_PAYLOAD; i++)
+				payload[i]=sentence[i]-48;		
+
+			printf ("Detected a payload which is *not* multiple of 8 (%d bits). Padding with %d bits to %d\n", LEN_PAYLOAD, PADDING_TO_EIGHT, LEN_PAYLOAD + PADDING_TO_EIGHT);
+			memset (payload + LEN_PAYLOAD, 0x0, PADDING_TO_EIGHT);
+			
+			LEN_PAYLOAD += PADDING_TO_EIGHT;	// update PAYLOAD LENGHT
+		}
+
+		dump_buffer(payload, LEN_PAYLOAD);
+
+		// crc 
+		char crc[16];	// 2 gnuradio bytes of CRC		
+		char input_crc[LEN_PAYLOAD];
+		memcpy (input_crc, payload, LEN_PAYLOAD);
+		compute_crc (input_crc, crc, LEN_PAYLOAD);	
+		memcpy (payload+LEN_PAYLOAD, crc, LEN_CRC);
+
+		// reverse
+		reverse_bit_order (payload, LEN_PAYLOAD+LEN_CRC);
+
         
 //		B3co>HP00                                              P      ;8           ;56                RD           =Is3                     w      sU           kP06	                 CRC
 //		010010000011101011110111001110011000100000000000000000 100000 001011001000 001011000101000110 100010010100 001101011001111011000011 111111 111011100101 110011100000000000000110 0011000010001111		
@@ -463,6 +527,11 @@ namespace gr {
 		}
 
         d_repeat_cnt++;
+        // Reset state
+        d_curr_len = 0;
+
+        //return nout;
+
 
         // Tell runtime system how many output items we produced.
         return noutput_items;
