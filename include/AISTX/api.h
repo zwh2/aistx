@@ -25,9 +25,9 @@
 #include <gnuradio/attributes.h>
 
 #ifdef gnuradio_AISTX_EXPORTS
-#  define AISTX_API __GR_ATTR_EXPORT
+#define AISTX_API __GR_ATTR_EXPORT
 #else
-#  define AISTX_API __GR_ATTR_IMPORT
+#define AISTX_API __GR_ATTR_IMPORT
 #endif
 
 #endif /* INCLUDED_AISTX_API_H */
