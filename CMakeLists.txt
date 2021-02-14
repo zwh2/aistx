@@ -22,7 +22,6 @@
 # Project setup
 ########################################################################
 cmake_minimum_required(VERSION 3.8)
-include(GNUInstallDirs)
 project(gr-AISTX CXX C)
 
 option(ENABLE_TESTING "Enable/Build tests" OFF)
@@ -88,15 +87,6 @@ ELSE()
 ENDIF()
 
 ########################################################################
-# Find boost
-########################################################################
-find_package(Boost "1.65" COMPONENTS filesystem system program_options regex thread)
-
-if(NOT Boost_FOUND)
-    message(FATAL_ERROR "Boost required to compile AISTX")
-endif()
-
-########################################################################
 # Install directories
 ########################################################################
 find_package(Gnuradio "3.8" COMPONENTS fft filter blocks REQUIRED)
@@ -108,18 +98,12 @@ if(NOT CMAKE_MODULES_DIR)
   set(CMAKE_MODULES_DIR lib${LIB_SUFFIX}/cmake)
 endif(NOT CMAKE_MODULES_DIR)
 
-set(GR_RUNTIME_DIR      bin)
-set(GR_LIBRARY_DIR      lib${LIB_SUFFIX})
 set(GR_INCLUDE_DIR      include/AISTX)
-set(GR_DATA_DIR         share)
+set(GR_CMAKE_DIR        ${CMAKE_MODULES_DIR}/AISTX)
 set(GR_PKG_DATA_DIR     ${GR_DATA_DIR}/${CMAKE_PROJECT_NAME})
-set(GR_DOC_DIR          ${GR_DATA_DIR}/doc)
 set(GR_PKG_DOC_DIR      ${GR_DOC_DIR}/${CMAKE_PROJECT_NAME})
-set(GR_CONF_DIR         etc)
 set(GR_PKG_CONF_DIR     ${GR_CONF_DIR}/${CMAKE_PROJECT_NAME}/conf.d)
-set(GR_LIBEXEC_DIR      libexec)
 set(GR_PKG_LIBEXEC_DIR  ${GR_LIBEXEC_DIR}/${CMAKE_PROJECT_NAME})
-set(GRC_BLOCKS_DIR      ${GR_PKG_DATA_DIR}/grc/blocks)
 
 ########################################################################
 # On Apple only, set install name and use rpath correctly, if not already set
@@ -144,25 +128,6 @@ endif(APPLE)
 ########################################################################
 # Find gnuradio build dependencies
 ########################################################################
-
-########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-    ${Boost_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}/gnuradio/swig
-)
-
-link_directories(
-    ${Boost_LIBRARY_DIRS}
-    ${GNURADIO_RUNTIME_LIBRARY_DIRS}
-)
-
-# Set component parameters
-set(GR_AISTX_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "" FORCE)
-set(GR_AISTX_SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/swig CACHE INTERNAL "" FORCE)
 
 ########################################################################
 # Create uninstall target

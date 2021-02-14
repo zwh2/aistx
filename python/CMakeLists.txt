@@ -38,10 +38,12 @@ GR_PYTHON_INSTALL(
 ########################################################################
 # Handle the unit tests
 ########################################################################
-include(GrTest)
+if(ENABLE_TESTING)
+    include(GrTest)
 
-set(GR_TEST_TARGET_DEPS gnuradio-AISTX)
-set(GR_TEST_PYTHON_DIRS ${CMAKE_BINARY_DIR}/swig)
-GR_ADD_TEST(qa_nrz_to_nrzi ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_nrz_to_nrzi.py)
-GR_ADD_TEST(qa_Build_Frame ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_Build_Frame.py)
-GR_ADD_TEST(qa_DebugME ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_DebugME.py)
+    set(GR_TEST_TARGET_DEPS gnuradio-AISTX)
+    set(GR_TEST_PYTHON_DIRS ${CMAKE_BINARY_DIR}/swig)
+    GR_ADD_TEST(qa_nrz_to_nrzi ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_nrz_to_nrzi.py)
+    GR_ADD_TEST(qa_Build_Frame ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_Build_Frame.py)
+    GR_ADD_TEST(qa_DebugME ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_DebugME.py)
+endif(ENABLE_TESTING)

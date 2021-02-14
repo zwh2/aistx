@@ -23,8 +23,6 @@
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
 list(APPEND AISTX_sources
     nrz_to_nrzi_impl.cc
     Build_Frame_impl.cc
@@ -38,7 +36,7 @@ if(NOT AISTX_sources)
 endif(NOT AISTX_sources)
 
 add_library(gnuradio-AISTX SHARED ${AISTX_sources})
-target_link_libraries(gnuradio-AISTX gnuradio::gnuradio-runtime ${Boost_LIBRARIES})
+target_link_libraries(gnuradio-AISTX gnuradio::gnuradio-runtime)
 target_include_directories(gnuradio-AISTX
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     PUBLIC $<INSTALL_INTERFACE:include>
@@ -55,11 +53,7 @@ endif(APPLE)
 # Install built library files
 ########################################################################
 include(GrMiscUtils)
-install(TARGETS gnuradio-AISTX
-    LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
-    ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
-    RUNTIME DESTINATION bin              # .dll file
-)
+GR_LIBRARY_FOO(gnuradio-AISTX)
 
 ########################################################################
 # Print summary
@@ -71,7 +65,6 @@ message(STATUS "Building for version: ${VERSION} / ${LIBVER}")
 # Build and register unit test
 ########################################################################
 if(ENABLE_TESTING)
-message("asdf: ${ENABLE_TESTING}")
     find_package(CppUnit)
 
     if(NOT CPPUNIT_FOUND)
@@ -94,7 +87,6 @@ message("asdf: ${ENABLE_TESTING}")
     target_link_libraries(
         test-AISTX
         ${GNURADIO_RUNTIME_LIBRARIES}
-        ${Boost_LIBRARIES}
         ${CPPUNIT_LIBRARIES}
         gnuradio-AISTX
     )
