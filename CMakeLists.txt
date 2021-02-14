@@ -24,7 +24,11 @@
 cmake_minimum_required(VERSION 3.8)
 include(GNUInstallDirs)
 project(gr-AISTX CXX C)
-enable_testing()
+
+option(ENABLE_TESTING "Enable/Build tests" OFF)
+if(ENABLE_TESTING)
+    enable_testing()
+endif(ENABLE_TESTING)
 
 # Install to PyBOMBS target prefix if defined
 if(DEFINED ENV{PYBOMBS_PREFIX})
@@ -140,11 +144,6 @@ endif(APPLE)
 ########################################################################
 # Find gnuradio build dependencies
 ########################################################################
-find_package(CppUnit)
-
-if(NOT CPPUNIT_FOUND)
-    message(FATAL_ERROR "CppUnit required to compile AISTX")
-endif()
 
 ########################################################################
 # Setup the include and linker paths
@@ -152,14 +151,12 @@ endif()
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
     ${Boost_INCLUDE_DIRS}
-    ${CPPUNIT_INCLUDE_DIRS}
     ${GNURADIO_RUNTIME_INCLUDE_DIRS}
     ${GNURADIO_RUNTIME_INCLUDE_DIRS}/gnuradio/swig
 )
 
 link_directories(
     ${Boost_LIBRARY_DIRS}
-    ${CPPUNIT_LIBRARY_DIRS}
     ${GNURADIO_RUNTIME_LIBRARY_DIRS}
 )
 

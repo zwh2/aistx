@@ -70,23 +70,34 @@ message(STATUS "Building for version: ${VERSION} / ${LIBVER}")
 ########################################################################
 # Build and register unit test
 ########################################################################
-include(GrTest)
+if(ENABLE_TESTING)
+message("asdf: ${ENABLE_TESTING}")
+    find_package(CppUnit)
 
-include_directories(${CPPUNIT_INCLUDE_DIRS})
+    if(NOT CPPUNIT_FOUND)
+        message(FATAL_ERROR "CppUnit required to compile AISTX")
+    endif()
 
-list(APPEND test_AISTX_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_AISTX.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/qa_AISTX.cc
-)
+    include(GrTest)
 
-add_executable(test-AISTX ${test_AISTX_sources})
+    list(APPEND test_AISTX_sources
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_AISTX.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/qa_AISTX.cc
+    )
 
-target_link_libraries(
-  test-AISTX
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${CPPUNIT_LIBRARIES}
-  gnuradio-AISTX
-)
+    add_executable(test-AISTX ${test_AISTX_sources})
 
-GR_ADD_TEST(test_AISTX test-AISTX)
+    target_include_directories(test-AISTX
+        PUBLIC ${CPPUNIT_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(
+        test-AISTX
+        ${GNURADIO_RUNTIME_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${CPPUNIT_LIBRARIES}
+        gnuradio-AISTX
+    )
+
+    GR_ADD_TEST(test_AISTX test-AISTX)
+endif(ENABLE_TESTING)
