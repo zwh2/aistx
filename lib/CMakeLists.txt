@@ -23,8 +23,6 @@
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
 list(APPEND AISTX_sources
     nrz_to_nrzi_impl.cc
     Build_Frame_impl.cc
@@ -38,7 +36,7 @@ if(NOT AISTX_sources)
 endif(NOT AISTX_sources)
 
 add_library(gnuradio-AISTX SHARED ${AISTX_sources})
-target_link_libraries(gnuradio-AISTX gnuradio::gnuradio-runtime ${Boost_LIBRARIES})
+target_link_libraries(gnuradio-AISTX gnuradio::gnuradio-runtime)
 target_include_directories(gnuradio-AISTX
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     PUBLIC $<INSTALL_INTERFACE:include>
@@ -55,11 +53,7 @@ endif(APPLE)
 # Install built library files
 ########################################################################
 include(GrMiscUtils)
-install(TARGETS gnuradio-AISTX
-    LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
-    ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
-    RUNTIME DESTINATION bin              # .dll file
-)
+GR_LIBRARY_FOO(gnuradio-AISTX)
 
 ########################################################################
 # Print summary
@@ -70,23 +64,32 @@ message(STATUS "Building for version: ${VERSION} / ${LIBVER}")
 ########################################################################
 # Build and register unit test
 ########################################################################
-include(GrTest)
+if(ENABLE_TESTING)
+    find_package(CppUnit)
 
-include_directories(${CPPUNIT_INCLUDE_DIRS})
+    if(NOT CPPUNIT_FOUND)
+        message(FATAL_ERROR "CppUnit required to compile AISTX")
+    endif()
 
-list(APPEND test_AISTX_sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_AISTX.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/qa_AISTX.cc
-)
+    include(GrTest)
 
-add_executable(test-AISTX ${test_AISTX_sources})
+    list(APPEND test_AISTX_sources
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_AISTX.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/qa_AISTX.cc
+    )
 
-target_link_libraries(
-  test-AISTX
-  ${GNURADIO_RUNTIME_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${CPPUNIT_LIBRARIES}
-  gnuradio-AISTX
-)
+    add_executable(test-AISTX ${test_AISTX_sources})
 
-GR_ADD_TEST(test_AISTX test-AISTX)
+    target_include_directories(test-AISTX
+        PUBLIC ${CPPUNIT_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(
+        test-AISTX
+        ${GNURADIO_RUNTIME_LIBRARIES}
+        ${CPPUNIT_LIBRARIES}
+        gnuradio-AISTX
+    )
+
+    GR_ADD_TEST(test_AISTX test-AISTX)
+endif(ENABLE_TESTING)

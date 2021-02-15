@@ -27,10 +27,9 @@
 
 #include "qa_AISTX.h"
 
-CppUnit::TestSuite *
-qa_AISTX::suite()
+CppUnit::TestSuite* qa_AISTX::suite()
 {
-  CppUnit::TestSuite *s = new CppUnit::TestSuite("AISTX");
+    CppUnit::TestSuite* s = new CppUnit::TestSuite("AISTX");
 
-  return s;
+    return s;
 }

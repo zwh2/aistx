@@ -5,10 +5,6 @@ label: AIS Frame Builder
 category: AISTX
 
 parameters:
--   id: sentence
-    label: Sentence
-    dtype: string
-    default: '010010000011101011110111001110011000100000000000000000100000001011001000001011000101000110100010010100001101011001111011000011111111111011100101110011100000000000000110'
 -   id: repeat
     label: Repeat
     dtype: enum
@@ -21,6 +17,15 @@ parameters:
     default: 'True'
     options: ['True', 'False']
     option_labels: ['Yes', 'No']
+-   id: tag
+    label: Length tag name
+    dtype: string
+    default: packet_len
+
+inputs:
+-   domain: message
+    id: sentence
+    optional: true
 
 outputs:
 -   domain: stream
@@ -28,6 +33,6 @@ outputs:
 
 templates:
     imports: import AISTX
-    make: AISTX.Build_Frame(${sentence}, ${repeat}, ${enable_NRZI})
+    make: AISTX.Build_Frame(${repeat}, ${enable_NRZI}, ${tag})
 
 file_format: 1
