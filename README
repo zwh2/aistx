@@ -15,9 +15,13 @@ The AIS Frame Builder block for GnuRadio            c8b7018386f64dd725fde119f406
 A NMEA encoder (binary to ASCII) (C version)        2534dc06c21fe53f45bd2abab96bb6a7  unpacker.c
 A NMEA encoder (Perl version by Gary C. Kessler)    52ab60db06525f2230bb4de3ee61a34b  unpacker.pl
 
+
+Install GNU Radio Version: GNU Radio Companion 3.7.13.5
+Python Version: 3.6.9
+
 $ mkdir build
 $ cd build
-$ cmake ../
+$ cmake -D PYTHON_EXECUTABLE=/usr/bin/python ../ -Wno-dev
 $ make
 $ sudo make install 
 
